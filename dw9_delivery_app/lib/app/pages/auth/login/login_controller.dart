@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:dw9_delivery_app/app/core/exceptions/unauthorized_exception.dart';
-import 'package:dw9_delivery_app/app/models/auth_model.dart';
 import 'package:dw9_delivery_app/app/pages/auth/login/login_state.dart';
 import 'package:dw9_delivery_app/app/repositories/auth/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,7 +16,7 @@ class LoginController extends Cubit<LoginState> {
       emit(state.copyWith(status: LoginStatus.login));
       final authModel = await _authRepository.login(email, password);
       final sp = await SharedPreferences.getInstance();
-      sp.setString('accesssToken', authModel.accessToken);
+      sp.setString('accessToken', authModel.accessToken);
       sp.setString('refreshToken', authModel.refreshToken);
       emit(state.copyWith(status: LoginStatus.sucess));
     } on UnauthorizedException catch (e, s) {
