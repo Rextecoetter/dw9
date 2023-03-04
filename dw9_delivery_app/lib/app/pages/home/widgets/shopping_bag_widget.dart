@@ -12,6 +12,8 @@ class ShoppingBagWidget extends StatelessWidget {
     final navigator = Navigator.of(context);
     final sp = await SharedPreferences.getInstance();
 
+    //sp.clear();
+
     if (!sp.containsKey('accessToken')) {
       //enviar login
       final loginResult = await navigator.pushNamed('/auth/login');
@@ -19,11 +21,9 @@ class ShoppingBagWidget extends StatelessWidget {
       if (loginResult == false || loginResult == null) {
         return;
       }
-
-      //dia 4 aula 2 4min
     }
 
-    //enviar para a bag
+    await navigator.pushNamed('/order', arguments: bag);
   }
 
   const ShoppingBagWidget({super.key, required this.bag});
