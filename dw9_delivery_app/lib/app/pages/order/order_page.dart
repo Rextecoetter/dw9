@@ -37,9 +37,7 @@ class _OrderPageState extends BaseState<OrderPage, OrderController> {
             error: () {
               hideLoader();
               showError(state.errorMessage ?? 'Erro não informado');
-            }
-            //dia 5 aula 1 34min
-            );
+            });
       },
       child: Scaffold(
         appBar: DeliveryAppbar(),
