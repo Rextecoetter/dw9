@@ -35,26 +35,65 @@ class _OrderPageState extends BaseState<OrderPage, OrderController> {
     controller.load(products);
   }
 
-  void _showConfrimProductDialog(OrderConfrimDeleteProductState state) {} //dia 5 aula 2 27:00
+  void _showConfrimProductDialog(OrderConfrimDeleteProductState state) {
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Deseja excluir o produto ${state.orderProduc.product.name}?'),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    controller.cancelDeleteProcess();
+                  },
+                  child: Text(
+                    'Cancelar',
+                    style: context.textStyles.textExtraBold.copyWith(color: Colors.red),
+                  )),
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    controller.decremetProduct(state.index);
+                  },
+                  child: Text(
+                    'Confirmar',
+                    style: context.textStyles.textExtraBold,
+                  )),
+            ],
+          );
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<OrderController, OrderState>(
       listener: (context, state) {
         state.status.matchAny(
-          any: () => hideLoader(),
-          loading: () => showLoader(),
-          error: () {
-            hideLoader();
-            showError(state.errorMessage ?? 'Erro não informado');
-          },
-          confirmRemoveProduct: () {
-            hideLoader();
-            if (state is OrderConfrimDeleteProductState) {
-              _showConfrimProductDialog(state);
-            }
-          },
-        );
+            any: () => hideLoader(),
+            loading: () => showLoader(),
+            error: () {
+              hideLoader();
+              showError(state.errorMessage ?? 'Erro não informado');
+            },
+            confirmRemoveProduct: () {
+              hideLoader();
+              if (state is OrderConfrimDeleteProductState) {
+                _showConfrimProductDialog(state);
+              }
+            },
+            emptyBag: () {
+              showInfo('Sua sacola está vazia, por favor selecione um produto para realizar o seu pedido');
+              Navigator.pop(context, <OrderProductDto>[]);
+            },
+            success: () {
+              hideLoader();
+              Navigator.of(context).popAndPushNamed(
+                '/order/completed',
+                result: <OrderProductDto>[],
+              );
+            });
       },
       child: WillPopScope(
         onWillPop: () async {
@@ -80,7 +119,9 @@ class _OrderPageState extends BaseState<OrderPage, OrderController> {
                           style: context.textStyles.textTitle,
                         ),
                         IconButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            controller.emptyBag();
+                          },
                           icon: Image.asset('assets/images/trashRegular.png'),
                         ),
                       ],
@@ -200,7 +241,13 @@ class _OrderPageState extends BaseState<OrderPage, OrderController> {
                             final paymentTypeSelected = paymentTypeId != null;
                             paymentTypeValid.value = paymentTypeSelected;
 
-                            if (valid) {}
+                            if (valid && paymentTypeSelected) {
+                              controller.saveOrder(
+                                address: adressEC.text,
+                                document: documentEC.text,
+                                paymentMethodId: paymentTypeId!,
+                              );
+                            }
                           },
                         ),
                       ),
