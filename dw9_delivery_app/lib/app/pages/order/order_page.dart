@@ -1,3 +1,4 @@
+import 'package:dw9_delivery_app/app/core/extensions/formarter_extension.dart';
 import 'package:dw9_delivery_app/app/core/ui/styles/text_styles.dart';
 import 'package:dw9_delivery_app/app/core/ui/widgets/delivery_appbar.dart';
 import 'package:dw9_delivery_app/app/core/ui/widgets/delivery_button.dart';
@@ -34,160 +35,180 @@ class _OrderPageState extends BaseState<OrderPage, OrderController> {
     controller.load(products);
   }
 
+  void _showConfrimProductDialog(OrderConfrimDeleteProductState state) {} //dia 5 aula 2 27:00
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<OrderController, OrderState>(
       listener: (context, state) {
         state.status.matchAny(
-            any: () => hideLoader(),
-            loading: () => showLoader(),
-            error: () {
-              hideLoader();
-              showError(state.errorMessage ?? 'Erro não informado');
-            });
+          any: () => hideLoader(),
+          loading: () => showLoader(),
+          error: () {
+            hideLoader();
+            showError(state.errorMessage ?? 'Erro não informado');
+          },
+          confirmRemoveProduct: () {
+            hideLoader();
+            if (state is OrderConfrimDeleteProductState) {
+              _showConfrimProductDialog(state);
+            }
+          },
+        );
       },
-      child: Scaffold(
-        appBar: DeliveryAppbar(),
-        body: Form(
-          key: formKey,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
+      child: WillPopScope(
+        onWillPop: () async {
+          Navigator.of(context).pop(controller.state.orderProducts);
+          return false;
+        },
+        child: Scaffold(
+          appBar: DeliveryAppbar(),
+          body: Form(
+            key: formKey,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Carrinho',
+                          style: context.textStyles.textTitle,
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: Image.asset('assets/images/trashRegular.png'),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Carrinho',
-                        style: context.textStyles.textTitle,
+                ),
+                BlocSelector<OrderController, OrderState, List<OrderProductDto>>(
+                  selector: (state) => state.orderProducts,
+                  builder: (context, orderProducts) {
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        childCount: orderProducts.length,
+                        (context, index) {
+                          final orderProduct = orderProducts[index];
+                          return Column(
+                            children: [
+                              OrderProductTile(
+                                orderIndex: index,
+                                orderProduct: orderProduct,
+                              ),
+                              const Divider(
+                                color: Colors.grey,
+                              )
+                            ],
+                          );
+                        },
                       ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: Image.asset('assets/images/trashRegular.png'),
+                    );
+                  },
+                ),
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total do pedido',
+                              style: context.textStyles.textExtraBold.copyWith(fontSize: 16),
+                            ),
+                            BlocSelector<OrderController, OrderState, double>(
+                              selector: (state) => state.totalOrder,
+                              builder: (context, totalOrder) {
+                                return Text(
+                                  totalOrder.currencyPTBR,
+                                  style: context.textStyles.textExtraBold.copyWith(fontSize: 20),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      OrderField(
+                        title: 'Endereço de Entrega',
+                        controller: adressEC,
+                        validator: Validatorless.required('Endereço Obrigatório'),
+                        hintText: 'Digite um endereço',
+                      ),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      OrderField(
+                        title: 'CPF',
+                        controller: documentEC,
+                        validator: Validatorless.required('CPF Obrigatório'),
+                        hintText: 'Digite o CPF',
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      BlocSelector<OrderController, OrderState, List<PaymentTypeModel>>(
+                        selector: (state) => state.paymentTypes,
+                        builder: (context, paymentTypes) {
+                          return ValueListenableBuilder(
+                            valueListenable: paymentTypeValid,
+                            builder: (_, paymentTypeValidValue, child) {
+                              return PaymentTypesField(
+                                paymentTypes: paymentTypes,
+                                valueChanged: (value) {
+                                  paymentTypeId = value;
+                                },
+                                valid: paymentTypeValidValue,
+                                valueSelected: paymentTypeId.toString(),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
-              ),
-              BlocSelector<OrderController, OrderState, List<OrderProductDto>>(
-                selector: (state) => state.orderProducts,
-                builder: (context, orderProducts) {
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      childCount: orderProducts.length,
-                      (context, index) {
-                        final orderProduct = orderProducts[index];
-                        return Column(
-                          children: [
-                            OrderProductTile(
-                              orderIndex: index,
-                              orderProduct: orderProduct,
-                            ),
-                            const Divider(
-                              color: Colors.grey,
-                            )
-                          ],
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total do pedido',
-                            style: context.textStyles.textExtraBold.copyWith(fontSize: 16),
-                          ),
-                          Text(
-                            r'R$ 200,00',
-                            style: context.textStyles.textExtraBold.copyWith(fontSize: 20),
-                          ),
-                        ],
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Divider(
+                        color: Colors.grey,
                       ),
-                    ),
-                    const Divider(
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    OrderField(
-                      title: 'Endereço de Entrega',
-                      controller: adressEC,
-                      validator: Validatorless.required('Endereço Obrigatório'),
-                      hintText: 'Digite um endereço',
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    OrderField(
-                      title: 'CPF',
-                      controller: documentEC,
-                      validator: Validatorless.required('CPF Obrigatório'),
-                      hintText: 'Digite o CPF',
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    BlocSelector<OrderController, OrderState, List<PaymentTypeModel>>(
-                      selector: (state) => state.paymentTypes,
-                      builder: (context, paymentTypes) {
-                        return ValueListenableBuilder(
-                          valueListenable: paymentTypeValid,
-                          builder: (_, paymentTypeValidValue, child) {
-                            return PaymentTypesField(
-                              paymentTypes: paymentTypes,
-                              valueChanged: (value) {
-                                paymentTypeId = value;
-                              },
-                              valid: paymentTypeValidValue,
-                              valueSelected: paymentTypeId.toString(),
-                            );
+                      Padding(
+                        padding: const EdgeInsets.all(15.0),
+                        child: DeliveryButton(
+                          height: 48,
+                          width: double.infinity,
+                          label: 'FINALIZAR',
+                          onPressed: () {
+                            final valid = formKey.currentState?.validate() ?? false;
+
+                            final paymentTypeSelected = paymentTypeId != null;
+                            paymentTypeValid.value = paymentTypeSelected;
+
+                            if (valid) {}
                           },
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Divider(
-                      color: Colors.grey,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(15.0),
-                      child: DeliveryButton(
-                        height: 48,
-                        width: double.infinity,
-                        label: 'FINALIZAR',
-                        onPressed: () {
-                          final valid = formKey.currentState?.validate() ?? false;
-
-                          final paymentTypeSelected = paymentTypeId != null;
-                          paymentTypeValid.value = paymentTypeSelected;
-
-                          if (valid) {}
-                        },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              )
-            ],
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
         ),
       ),
